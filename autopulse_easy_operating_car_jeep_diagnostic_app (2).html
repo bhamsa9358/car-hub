@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPulse - Easy Operating Car, Jeep & Diagnostic App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            accent: '#f59e0b',
+                            neon: '#10b981',
+                            vintage: '#8b5cf6',
+                            jeep: '#15803d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen custom-scrollbar selection:bg-amber-500 selection:text-slate-950">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Dataset with New Launches, Jeeps, 2nd Owner Cars & Vintage Vehicles
+        const INITIAL_CARS = [
+            // 2nd Owner / Pre-Owned Section
+            {
+                id: 'used-fortuner-2021-2nd-owner',
+                name: 'Toyota Fortuner 2.8 4x4 Diesel (2nd Owner)',
+                brand: 'Toyota (Pre-Owned)',
+                type: 'used', // 'launch', 'vintage', 'imported', 'jeep', 'used'
+                category: '2nd Owner Luxury SUV',
+                launchDate: '2021 Model (Pre-Owned)',
+                expectedMonth: 'Available Immediately',
+                expectedPrice: '₹24.50 - 27.00 Lakh',
+                minPriceNum: 24.5,
+                maxPriceNum: 27.0,
+                fuelTypes: ['Diesel'],
+                rangeMileage: '12.0 kmpl',
+                engineBattery: '2.8L Diesel (201 bhp)',
+                safetyRating: '5-Star NCAP',
+                seating: '7 Seater',
+                image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'Verified Inspection Done',
+                bookingStatus: 'Direct Owner / Dealer Sale',
+                highlights: ['2nd Owner Verified', 'Full Service History', '4x4 High/Low Ratio'],
+                priceDropForecast: [
+                    { period: 'Current Used Price', expectedDiscount: '₹26.00 Lakh Avg Market Rate', rateScore: 'Fair Market' },
+                    { period: 'Year-End Depreciated Rate (Dec 2026)', expectedDiscount: '₹1.50 Lakh - ₹2.00 Lakh Price Drop', rateScore: 'Resale Rate Down' }
+                ],
+                bestTimeToBuy: 'December / March fiscal close when used car dealers cut prices by 8-10%.',
+                priceCutReason: '2nd owner cars drop in price significantly before year-end inventory renewal.'
+            },
+            {
+                id: 'used-swift-2020-2nd-owner',
+                name: 'Maruti Suzuki Swift ZXi (2nd Owner)',
+                brand: 'Maruti True Value',
+                type: 'used',
+                category: '2nd Owner Hatchback',
+                launchDate: '2020 Model (Pre-Owned)',
+                expectedMonth: 'Ready for Purchase',
+                expectedPrice: '₹4.80 - 5.30 Lakh',
+                minPriceNum: 4.8,
+                maxPriceNum: 5.3,
+                fuelTypes: ['Petrol'],
+                rangeMileage: '21.2 kmpl',
+                engineBattery: '1.2L DualJet Petrol',
+                safetyRating: '2-Star Global NCAP',
+                seating: '5 Seater',
+                image: 'https://images.unsplash.com/photo-1541348263662-e082662d82da?auto=format&fit=crop&w=800&q=80',
+                isHot: false,
+                status: 'Certified Pre-Owned',
+                bookingStatus: 'Immediate Transfer Available',
+                highlights: ['Low Maintenance Cost', '2nd Owner RC Valid', 'Insurance Active'],
+                priceDropForecast: [
+                    { period: 'Current Rate', expectedDiscount: '₹5.10 Lakh Market Price', rateScore: 'Stable' },
+                    { period: 'Festival Offer (Nov 2026)', expectedDiscount: '₹25,000 Cash Discount + Free Transfer', rateScore: 'Best Buy' }
+                ],
+                bestTimeToBuy: 'Diwali festive season with free RC transfer and dealer discounts.',
+                priceCutReason: 'Pre-owned dealers offer free registration transfer during festival deals.'
+            },
+
+            // Jeep & Off-Road Section
+            {
+                id: 'jeep-wrangler-rubicon-2026',
+                name: 'Jeep Wrangler Rubicon (4x4 Off-Roader)',
+                brand: 'Jeep India',
+                type: 'jeep',
+                category: 'Hardcore 4x4 Off-Road Jeep',
+                launchDate: '2026-10-20',
+                expectedMonth: 'Next Month (October 2026)',
+                expectedPrice: '₹67.50 - 71.50 Lakh',
+                minPriceNum: 67.5,
+                maxPriceNum: 71.5,
+                fuelTypes: ['Petrol'],
+                rangeMileage: '9.5 kmpl',
+                engineBattery: '2.0L Turbo Petrol (270 bhp)',
+                safetyRating: '5-Star Global',
+                seating: '5 Seater',
+                image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'New Edition Booking Live',
+                bookingStatus: 'Bookings Open',
+                highlights: ['Rock-Trac 4WD System', 'Removable Soft/Hard Top', 'Off-Road Camera'],
+                priceDropForecast: [
+                    { period: 'Launch (Oct 2026)', expectedDiscount: '₹0 (Standard Launch Price)', rateScore: 'Peak Price' },
+                    { period: 'Diwali Offer (Nov 2026)', expectedDiscount: '₹1.50 Lakh - ₹2.50 Lakh Cash Discount', rateScore: 'Festive Rate Down' },
+                    { period: 'Year-End Stock (Dec 2026)', expectedDiscount: '₹3.50 Lakh - ₹5.00 Lakh Corporate Benefits', rateScore: 'Major Rate Down' }
+                ],
+                bestTimeToBuy: 'December 2026 (Year-end stock clearance on luxury 4x4 Jeeps).',
+                priceCutReason: 'Jeep India offers significant discounts during year-end to clear stock.'
+            },
+            {
+                id: 'mahindra-thar-roxx',
+                name: 'Mahindra Thar Roxx (5-Door Jeep)',
+                brand: 'Mahindra Jeep',
+                type: 'jeep',
+                category: '5-Door Off-Road SUV / Jeep',
+                launchDate: '2026-10-02',
+                expectedMonth: 'Next Month (October 2026)',
+                expectedPrice: '₹12.99 - 20.49 Lakh',
+                minPriceNum: 12.99,
+                maxPriceNum: 20.49,
+                fuelTypes: ['Petrol', 'Diesel'],
+                rangeMileage: '12 - 15 kmpl',
+                engineBattery: '2.0L mStallion Turbo / 2.2L mHawk',
+                safetyRating: '5-Star (Bharat NCAP)',
+                seating: '5 Seater',
+                image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'Unveil Done / Deliveries Next Month',
+                bookingStatus: 'Bookings Active',
+                highlights: ['4x4 Low-Ratio Transfer Case', 'Panoramic Sunroof', 'Level-2 ADAS'],
+                priceDropForecast: [
+                    { period: 'Launch (Oct 2026)', expectedDiscount: '₹0 (High Waiting Period)', rateScore: 'Peak Price' },
+                    { period: 'Diwali (Nov 2026)', expectedDiscount: 'Free Accessories Pack (₹15,000)', rateScore: 'High Demand' },
+                    { period: '6 Months Later (Mar 2027)', expectedDiscount: '₹20,000 Exchange Bonus', rateScore: 'Slight Ease' }
+                ],
+                bestTimeToBuy: 'Wait 6 months for waiting period reduction & introductory offer updates.',
+                priceCutReason: 'High initial demand prevents early cash price drops.'
+            },
+            {
+                id: 'willys-jeep-vintage-1944',
+                name: '1944 Willys MB / Ford GPW (Vintage WWII Jeep)',
+                brand: 'Willys Vintage',
+                type: 'vintage',
+                category: 'Vintage WWII Military Jeep',
+                launchDate: '1944 Heritage Edition',
+                expectedMonth: 'Heritage Auction Sale',
+                expectedPrice: '₹12.50 - 18.00 Lakh (Restored)',
+                minPriceNum: 12.5,
+                maxPriceNum: 18.0,
+                fuelTypes: ['Petrol'],
+                rangeMileage: '7.0 kmpl',
+                engineBattery: '2.2L Go Devil 4-Cylinder',
+                safetyRating: 'Military Classic Standard',
+                seating: '4 Seater',
+                image: 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'RTO Vintage Tag Certified',
+                bookingStatus: 'Private Collector Listing',
+                highlights: ['Original 4x4 Manual Lockout', 'WWII Canvas Top & Axe Holder', 'High Resale Heritage Value'],
+                priceDropForecast: [
+                    { period: 'Regular Collector Rate', expectedDiscount: '₹15 Lakh Average Price', rateScore: 'Classic Value' },
+                    { period: 'Monsoon Off-Season (Jul 2027)', expectedDiscount: '₹1.5 Lakh Direct Cash Discount', rateScore: 'Rate Down' }
+                ],
+                bestTimeToBuy: 'Monsoon off-season (July) when vintage rally activities are paused.',
+                priceCutReason: 'Vintage jeep collectors offer better cash deals during non-rally months.'
+            },
+
+            // Standard New Launches
+            {
+                id: 'tata-curvv-ev',
+                name: 'Tata Curvv EV / Petrol',
+                brand: 'Tata Motors',
+                type: 'launch',
+                category: 'Coupe SUV',
+                launchDate: '2026-10-15',
+                expectedMonth: 'Next Month (October 2026)',
+                expectedPrice: '₹11.50 - 19.00 Lakh',
+                minPriceNum: 11.5,
+                maxPriceNum: 19.0,
+                fuelTypes: ['Electric', 'Petrol', 'Diesel'],
+                rangeMileage: '502 km / range',
+                engineBattery: '55 kWh Battery / 1.2L Turbo Petrol',
+                safetyRating: '5-Star (Expected)',
+                seating: '5 Seater',
+                image: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'Official Confirmed',
+                bookingStatus: 'Pre-Bookings Open',
+                highlights: ['Gesture Powered Tailgate', '12.3-inch Touchscreen', 'Level-2 ADAS'],
+                priceDropForecast: [
+                    { period: 'Launch (Oct 2026)', expectedDiscount: '₹0 (Introductory Price)', rateScore: 'Standard Price' },
+                    { period: 'Diwali Festive (Nov 2026)', expectedDiscount: '₹20,000 - ₹35,000 Cash/Exchange', rateScore: 'Mild Price Drop' },
+                    { period: 'Year-End Offer (Dec 2026)', expectedDiscount: '₹50,000 - ₹80,000 Benefits', rateScore: 'Major Rate Down' }
+                ],
+                bestTimeToBuy: 'December 2026 (Year-End Clearance + Festive Stock Offer)',
+                priceCutReason: 'Year-End inventory clearance & high dealer volume targets.'
+            },
+            {
+                id: 'skoda-kylaq',
+                name: 'Skoda Kylaq Sub-4m SUV',
+                brand: 'Skoda',
+                type: 'launch',
+                category: 'Sub-4m SUV',
+                launchDate: '2026-10-10',
+                expectedMonth: 'Next Month (October 2026)',
+                expectedPrice: '₹7.99 - 13.50 Lakh',
+                minPriceNum: 7.99,
+                maxPriceNum: 13.50,
+                fuelTypes: ['Petrol'],
+                rangeMileage: '19.8 kmpl',
+                engineBattery: '1.0L TSI Turbo Petrol (115 bhp)',
+                safetyRating: '5-Star NCAP',
+                seating: '5 Seater',
+                image: 'https://images.unsplash.com/photo-1541348263662-e082662d82da?auto=format&fit=crop&w=800&q=80',
+                isHot: true,
+                status: 'Global Debut Scheduled',
+                bookingStatus: 'Priority Club Booking Active',
+                highlights: ['MQB-A0-IN Platform', 'Virtual Cockpit', 'ESC Standard'],
+                priceDropForecast: [
+                    { period: 'Launch (Oct 2026)', expectedDiscount: '₹0 (Introductory)', rateScore: 'Intro Price' },
+                    { period: 'Diwali Peak (Nov 2026)', expectedDiscount: 'Free 4-Year Service Pack (₹25k Value)', rateScore: 'Added Value' },
+                    { period: 'Year-End (Dec 2026)', expectedDiscount: '₹40,000 Exchange + Loyalty', rateScore: 'Price Cut' }
+                ],
+                bestTimeToBuy: 'March 2027 for maximum price reduction + free maintenance packages.',
+                priceCutReason: 'European brands give massive fiscal end discounts.'
+            }
+        ];
+
+        // Preset Common Car Diagnostic Issues
+        const COMMON_CAR_ISSUES = [
+            {
+                id: 'check-engine-light',
+                title: 'Check Engine Light Illuminated',
+                category: 'Engine / Sensors',
+                icon: 'alert-triangle',
+                severity: 'Medium to High',
+                symptom: 'Dashboard warning light is on, accompanied by a slight power loss or rough idling.',
+                possibleCauses: ['Loose Gas Cap / Fuel Cap', 'Oxygen (O2) Sensor Fault', 'Spark Plug Failure', 'Dirty MAF Sensor'],
+                diySolution: '1. Tighten the fuel tank cap properly.\n2. Check engine oil and coolant levels.\n3. Disconnect the negative battery terminal for 5 minutes and reconnect. If the light persists, perform an OBD scan.',
+                estimatedCost: '₹300 - ₹2,500'
+            },
+            {
+                id: 'ac-not-cooling',
+                title: 'Car AC Not Cooling',
+                category: 'AC / Climate',
+                icon: 'snowflake',
+                severity: 'Low',
+                symptom: 'AC blower blows warm air or provides very weak cooling.',
+                possibleCauses: ['AC Gas (Refrigerant) Leakage', 'Clogged Cabin AC Filter', 'AC Compressor Clutch Failure', 'Radiator Fan Malfunction'],
+                diySolution: '1. Inspect and clean/replace the Cabin AC filter behind the glovebox (~₹300).\n2. Verify if the radiator fan turns on with the AC.\n3. Get R134a AC Gas refilled at a service center.',
+                estimatedCost: '₹800 - ₹3,500'
+            },
+            {
+                id: 'brake-squeal-noise',
+                title: 'Brake Squealing / Grinding Noise',
+                category: 'Brakes & Safety',
+                icon: 'disc',
+                severity: 'High',
+                symptom: 'High-pitched metallic squeak or grinding noise when pressing the brake pedal.',
+                possibleCauses: ['Worn Brake Pads', 'Dust / Debris on Brake Rotor', 'Rusted Brake Discs'],
+                diySolution: '1. Check brake pad thickness (replace if under 3mm).\n2. Clean the brake assembly with a high-pressure water spray.\n3. Stop driving immediately if you hear a heavy metal grinding sound.',
+                estimatedCost: '₹1,200 - ₹4,000'
+            },
+            {
+                id: 'battery-drain-starting-problem',
+                title: 'Car Not Starting / Weak Battery',
+                category: 'Electrical / Battery',
+                icon: 'zap',
+                severity: 'High',
+                symptom: 'Clicking sound when turning the key, dim headlights, sluggish engine cranking.',
+                possibleCauses: ['Discharged or Dead Battery', 'Corroded Battery Terminals', 'Defective Alternator / Starter Motor'],
+                diySolution: '1. Clean white/green corrosion off battery terminals with warm water.\n2. Jump-start using another car battery.\n3. Measure battery voltage with a multimeter (should read ~12.6V when engine is OFF).',
+                estimatedCost: '₹200 (Recharge) - ₹4,500 (New Battery)'
+            },
+            {
+                id: 'engine-overheating',
+                title: 'Engine Overheating / High Temp',
+                category: 'Cooling System',
+                icon: 'thermometer',
+                severity: 'Critical',
+                symptom: 'Temperature gauge needle in the RED zone or steam rising under the hood.',
+                possibleCauses: ['Low Coolant Level', 'Faulty Thermostat Valve', 'Blown Radiator Fan Fuse', 'Water Pump Failure'],
+                diySolution: '1. Safely pull over immediately and turn OFF the engine.\n2. Wait 20-30 minutes for the engine to cool down before opening the radiator cap.\n3. Top up coolant or clean water and check for visible leaks.',
+                estimatedCost: '₹400 - ₹3,000'
+            }
+        ];
+
+        function App() {
+            const [cars, setCars] = useState(INITIAL_CARS);
+            const [activeCategoryTab, setActiveCategoryTab] = useState('all'); // 'all', 'launch', 'imported', 'vintage', 'jeep', 'used'
+            const [selectedFuel, setSelectedFuel] = useState('All');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [selectedCar, setSelectedCar] = useState(null);
+            const [activeMainTab, setActiveMainTab] = useState('upcoming'); // 'upcoming', 'price-drop', 'scanner', 'ai-assistant', 'wishlist'
+            const [wishlist, setWishlist] = useState([]);
+            const [priceFilter, setPriceFilter] = useState('all');
+
+            // Easy Operating Mode Toggle
+            const [easyMode, setEasyMode] = useState(true);
+            const [isListening, setIsListening] = useState(false);
+            const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+            const [userPhone, setUserPhone] = useState('');
+
+            // Calculator state
+            const [calcCarYear, setCalcCarYear] = useState('2022');
+            const [calcKm, setCalcKm] = useState('30000');
+            const [calculatedResale, setCalculatedResale] = useState(null);
+
+            // Diagnostic state
+            const [customIssueText, setCustomIssueText] = useState('');
+            const [diagnosticResult, setDiagnosticResult] = useState(null);
+            const [isDiagnosing, setIsDiagnosing] = useState(false);
+            const [selectedSymptom, setSelectedSymptom] = useState(null);
+
+            // AI State
+            const [aiQuestion, setAiQuestion] = useState('');
+            const [aiChatHistory, setAiChatHistory] = useState([
+                { sender: 'bot', text: 'Hello! I am your AutoPulse AI Consultant. Ask me: Which cars or Jeeps are launching next month, what are fair prices for 2nd owner cars, or how to fix a problem in your car?' }
+            ]);
+            const [aiLoading, setAiLoading] = useState(false);
+
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [activeMainTab, selectedCar, cars, aiChatHistory, activeCategoryTab, easyMode, diagnosticResult]);
+
+            const toggleWishlist = (carId) => {
+                if (wishlist.includes(carId)) {
+                    setWishlist(wishlist.filter(id => id !== carId));
+                } else {
+                    setWishlist([...wishlist, carId]);
+                }
+            };
+
+            // Voice Search Handler
+            const handleVoiceSearch = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert("Voice recognition is not supported in your browser. Please type in the search bar below.");
+                    return;
+                }
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+                recognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    setSearchQuery(text);
+                    setCustomIssueText(text);
+                };
+                recognition.start();
+            };
+
+            // Resale Value Calculator
+            const calculateResalePrice = () => {
+                const age = 2026 - parseInt(calcCarYear);
+                const km = parseInt(calcKm);
+                let depreciationPercent = (age * 9) + (km / 10000 * 2.5);
+                if (depreciationPercent > 65) depreciationPercent = 65;
+                if (depreciationPercent < 10) depreciationPercent = 10;
+
+                const basePrice = 18.0; 
+                const predictedVal = (basePrice * (100 - depreciationPercent) / 100).toFixed(2);
+                setCalculatedResale({
+                    val: predictedVal,
+                    depreciation: depreciationPercent.toFixed(0),
+                    bestMonth: 'October - December (Festive Offers & Year-End Clearance)'
+                });
+            };
+
+            // Diagnostic Handler
+            const handleDiagnoseIssue = async (issueObj = null) => {
+                const issueQuery = issueObj ? issueObj.title : customIssueText;
+                if (!issueQuery.trim()) return;
+
+                setIsDiagnosing(true);
+                if (issueObj) {
+                    setSelectedSymptom(issueObj);
+                }
+
+                try {
+                    const systemPrompt = `You are an expert Automobile Mechanic and Car Diagnostic Specialist. 
+Analyze the car problem description or symptom in clear English.
+Provide:
+1. Exact Root Cause
+2. Immediate DIY Fix / Steps to resolve
+3. Severity Level (Normal, Medium, High, Critical)
+4. Estimated Repair Cost in Indian Rupees (₹).
+Keep answer short, structured with clear emojis and bullet points for easy understanding.`;
+
+                    const payload = {
+                        contents: [{ role: 'user', parts: [{ text: `Diagnose this car problem: ${issueQuery}` }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    };
+
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                    let response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        setDiagnosticResult(text);
+                    } else if (issueObj) {
+                        setDiagnosticResult(`🔧 **Diagnostic Solution for ${issueObj.title}**\n\n**Possible Causes:**\n• ${issueObj.possibleCauses.join('\n• ')}\n\n**Immediate Action & Solution:**\n${issueObj.diySolution}\n\n**Estimated Cost:** ${issueObj.estimatedCost}`);
+                    } else {
+                        setDiagnosticResult("⚠️ Engine Check: Oil level, Battery Terminals, Radiator Coolant, and Air Filter should be inspected immediately.");
+                    }
+                } catch (e) {
+                    if (issueObj) {
+                        setDiagnosticResult(`🔧 **Diagnostic Solution for ${issueObj.title}**\n\n**Possible Causes:**\n• ${issueObj.possibleCauses.join('\n• ')}\n\n**Immediate Action & Solution:**\n${issueObj.diySolution}\n\n**Estimated Cost:** ${issueObj.estimatedCost}`);
+                    } else {
+                        setDiagnosticResult("⚠️ System offline. Please check engine oil, coolant level, and battery connections.");
+                    }
+                } finally {
+                    setIsDiagnosing(false);
+                }
+            };
+
+            // Main Filtering Logic
+            const filteredCars = useMemo(() => {
+                return cars.filter(car => {
+                    const matchesCategoryTab = activeCategoryTab === 'all' || car.type === activeCategoryTab;
+                    const matchesFuel = selectedFuel === 'All' || car.fuelTypes.includes(selectedFuel);
+                    const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                          car.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                          car.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+                    let matchesPrice = true;
+                    if (priceFilter === 'under15') matchesPrice = car.minPriceNum < 15;
+                    else if (priceFilter === '15to30') matchesPrice = car.minPriceNum >= 15 && car.minPriceNum <= 30;
+                    else if (priceFilter === 'luxury') matchesPrice = car.maxPriceNum > 30;
+
+                    return matchesCategoryTab && matchesFuel && matchesSearch && matchesPrice;
+                });
+            }, [cars, activeCategoryTab, selectedFuel, searchQuery, priceFilter]);
+
+            const handleAskAI = async (customPrompt = null) => {
+                const questionToAsk = customPrompt || aiQuestion;
+                if (!questionToAsk.trim()) return;
+
+                const userMsg = { sender: 'user', text: questionToAsk };
+                setAiChatHistory(prev => [...prev, userMsg]);
+                if (!customPrompt) setAiQuestion('');
+                setAiLoading(true);
+
+                try {
+                    const systemPrompt = `You are AutoPulse AI, an expert automotive analyst. Answer user questions in clear, professional English.
+Provide detailed information about upcoming new car launches, 4x4 Jeeps, 2nd owner used cars market prices, imported CBU cars, vintage classic car auctions, expected launch dates, prices in Lakhs/Crores, and predict WHEN prices or rates will drop or discounts will be offered.
+Keep responses concise, easy to operate for normal users, structured with bullet points.`;
+
+                    const payload = {
+                        contents: [{ role: 'user', parts: [{ text: questionToAsk }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    };
+
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                    let response;
+                    let retries = 0;
+                    let delay = 1000;
+                    while (retries < 3) {
+                        try {
+                            response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (response.ok) break;
+                        } catch (e) {}
+                        retries++;
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    }
+
+                    if (!response || !response.ok) throw new Error("API failed");
+
+                    const result = await response.json();
+                    let botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to fetch the answer right now. Please try again in a moment.";
+
+                    setAiChatHistory(prev => [...prev, { sender: 'bot', text: botResponse }]);
+                } catch (error) {
+                    setAiChatHistory(prev => [...prev, { 
+                        sender: 'bot', 
+                        text: 'Unable to connect to live updates due to a network issue. Generally, major price drops and discounts happen during festive seasons (Diwali) and December year-end clearance!' 
+                    }]);
+                } finally {
+                    setAiLoading(false);
+                }
+            };
+
+            return (
+                <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans">
+                    {/* Header Bar */}
+                    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 via-amber-500 to-cyan-500 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                                    <i data-lucide="car" className="w-6 h-6 text-emerald-400"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                                    AutoPulse <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Easy Operating App</span>
+                                </h1>
+                                <p className="text-xs text-slate-400">Launch Radar, Rate Down Tracker & Car Diagnostic Scanner</p>
+                            </div>
+                        </div>
+
+                        {/* Top Easy Mode Toggle Button */}
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setEasyMode(!easyMode)}
+                                className={`px-4 py-2 rounded-2xl text-xs font-black border transition-all flex items-center gap-2 shadow-md ${
+                                    easyMode 
+                                        ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/50 scale-105' 
+                                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                                }`}>
+                                <i data-lucide={easyMode ? "sparkles" : "sliders"} className="w-4 h-4"></i>
+                                {easyMode ? '⚡ Easy Mode: ON' : 'Standard View'}
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Quick Access Tiles for Super Easy Operation */}
+                    <div className="max-w-7xl mx-auto w-full px-4 lg:px-8 pt-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button 
+                                onClick={() => { setActiveMainTab('upcoming'); setActiveCategoryTab('all'); }}
+                                className={`p-4 rounded-2xl border text-left transition-all ${
+                                    activeMainTab === 'upcoming' 
+                                        ? 'bg-brand-600/30 border-brand-500 text-white shadow-lg shadow-brand-500/10' 
+                                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
+                                }`}>
+                                <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center mb-2 font-bold">
+                                    🚘 1
+                                </div>
+                                <h3 className="font-extrabold text-sm text-white">Find Vehicles</h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">2nd Owner, Jeep & New</p>
+                            </button>
+
+                            <button 
+                                onClick={() => setActiveMainTab('price-drop')}
+                                className={`p-4 rounded-2xl border text-left transition-all ${
+                                    activeMainTab === 'price-drop' 
+                                        ? 'bg-emerald-600/30 border-emerald-500 text-white shadow-lg shadow-emerald-500/10' 
+                                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
+                                }`}>
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 font-bold">
+                                    💰 2
+                                </div>
+                                <h3 className="font-extrabold text-sm text-white">Rate Drop Radar</h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Discounts & Price Cut</p>
+                            </button>
+
+                            <button 
+                                onClick={() => setActiveMainTab('scanner')}
+                                className={`p-4 rounded-2xl border text-left transition-all ${
+                                    activeMainTab === 'scanner' 
+                                        ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg shadow-cyan-500/10' 
+                                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
+                                }`}>
+                                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-2 font-bold">
+                                    🛠️ 3
+                                </div>
+                                <h3 className="font-extrabold text-sm text-white">Fix Car Problems</h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">1-Tap Scan & Solution</p>
+                            </button>
+
+                            <button 
+                                onClick={() => setActiveMainTab('ai-assistant')}
+                                className={`p-4 rounded-2xl border text-left transition-all ${
+                                    activeMainTab === 'ai-assistant' 
+                                        ? 'bg-amber-600/30 border-amber-500 text-white shadow-lg shadow-amber-500/10' 
+                                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
+                                }`}>
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2 font-bold">
+                                    🤖 4
+                                </div>
+                                <h3 className="font-extrabold text-sm text-white">AI Auto Guide</h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Instant Advice</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Container */}
+                    <main className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+
+                        {/* Easy Search Bar with Voice Button */}
+                        <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl mb-6 flex flex-wrap items-center gap-3 shadow-lg">
+                            <div className="relative flex-1 min-w-[220px]">
+                                <i data-lucide="search" className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input 
+                                    type="text" 
+                                    placeholder={easyMode ? "Type or speak car name (e.g. Fortuner, Thar, AC problem)..." : "Search car, model or problem..."}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-slate-950 text-sm text-white pl-11 pr-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-400 font-medium"
+                                />
+                            </div>
+
+                            {/* Voice Search Button */}
+                            <button 
+                                onClick={handleVoiceSearch}
+                                className={`px-4 py-3 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+                                    isListening 
+                                        ? 'bg-rose-600 text-white animate-pulse' 
+                                        : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
+                                }`}>
+                                <i data-lucide="mic" className="w-4 h-4"></i>
+                                {isListening ? 'Listening...' : '🎤 Voice Search'}
+                            </button>
+
+                            {/* WhatsApp Alert Trigger */}
+                            <button 
+                                onClick={() => setShowWhatsappModal(true)}
+                                className="px-4 py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md">
+                                <i data-lucide="message-circle" className="w-4 h-4"></i> WhatsApp Alert
+                            </button>
+                        </div>
+
+                        {/* EASY MODE INSTRUCTION BANNER */}
+                        {easyMode && (
+                            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl mb-6 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">💡</span>
+                                    <div>
+                                        <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider">Super Easy Operating Mode</h4>
+                                        <p className="text-xs text-slate-200 mt-0.5">
+                                            Simply click on any card below to view launch dates, price drops, or diagnostic fixes!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Top Category Filter Tabs */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 custom-scrollbar">
+                            <button 
+                                onClick={() => setActiveCategoryTab('all')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${activeCategoryTab === 'all' ? 'bg-brand-600 text-white border-brand-500 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'}`}>
+                                <i data-lucide="grid" className="w-4 h-4"></i> All Vehicles
+                            </button>
+                            <button 
+                                onClick={() => setActiveCategoryTab('used')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${activeCategoryTab === 'used' ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'}`}>
+                                <i data-lucide="user-check" className="w-4 h-4 text-amber-900"></i> 2nd Owner / Used Cars
+                            </button>
+                            <button 
+                                onClick={() => setActiveCategoryTab('jeep')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${activeCategoryTab === 'jeep' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'}`}>
+                                <i data-lucide="shield" className="w-4 h-4 text-emerald-300"></i> Jeeps & 4x4 Off-Roaders
+                            </button>
+                            <button 
+                                onClick={() => setActiveCategoryTab('launch')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${activeCategoryTab === 'launch' ? 'bg-brand-600 text-white border-brand-500 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'}`}>
+                                <i data-lucide="zap" className="w-4 h-4 text-amber-400"></i> Next Month Launches
+                            </button>
+                            <button 
+                                onClick={() => setActiveCategoryTab('vintage')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 ${activeCategoryTab === 'vintage' ? 'bg-purple-600 text-white border-purple-400 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'}`}>
+                                <i data-lucide="crown" className="w-4 h-4 text-purple-300"></i> Vintage Classic Collection
+                            </button>
+                        </div>
+
+                        {/* TAB 1: VEHICLE EXPLORER */}
+                        {activeMainTab === 'upcoming' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredCars.map(car => (
+                                    <div key={car.id} className="group bg-slate-900 rounded-3xl border border-slate-800 hover:border-brand-500/50 transition-all duration-300 overflow-hidden flex flex-col shadow-xl">
+                                        
+                                        <div className="relative h-52 overflow-hidden bg-slate-950">
+                                            <img 
+                                                src={car.image} 
+                                                alt={car.name} 
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-black/30"></div>
+
+                                            <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+                                                {car.type === 'used' && (
+                                                    <span className="bg-amber-400 text-slate-950 font-black text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                                        <i data-lucide="user-check" className="w-3 h-3"></i> 2nd Owner Verified
+                                                    </span>
+                                                )}
+                                                {car.type === 'jeep' && (
+                                                    <span className="bg-emerald-600 text-white font-black text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                                        <i data-lucide="shield" className="w-3 h-3"></i> 4x4 Jeep
+                                                    </span>
+                                                )}
+                                                {car.type === 'vintage' && (
+                                                    <span className="bg-purple-600 text-white font-black text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                                        <i data-lucide="crown" className="w-3 h-3"></i> Vintage Classic
+                                                    </span>
+                                                )}
+                                                {car.type === 'launch' && (
+                                                    <span className="bg-brand-600 text-white font-bold text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                                        <i data-lucide="sparkles" className="w-3 h-3"></i> Next Month Launch
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <button 
+                                                onClick={() => toggleWishlist(car.id)}
+                                                className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all ${wishlist.includes(car.id) ? 'bg-pink-500 text-white' : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800'}`}>
+                                                <i data-lucide="bookmark" className="w-4 h-4"></i>
+                                            </button>
+
+                                            <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center text-xs">
+                                                <span className="bg-slate-950/80 text-slate-200 font-medium px-2.5 py-1 rounded-lg backdrop-blur-md">
+                                                    {car.expectedMonth}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-5 flex-1 flex flex-col justify-between">
+                                            <div>
+                                                <span className="text-xs font-semibold text-slate-400 block mb-1">{car.brand} • {car.category}</span>
+                                                <h3 className="text-lg font-extrabold text-white group-hover:text-brand-400 transition-colors mb-1">
+                                                    {car.name}
+                                                </h3>
+
+                                                <p className="text-xl font-black text-amber-400 mb-3">
+                                                    {car.expectedPrice}
+                                                </p>
+
+                                                {/* Price Cut Alert Box */}
+                                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl mb-4">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+                                                        <span className="flex items-center gap-1">
+                                                            <i data-lucide="trending-down" className="w-3.5 h-3.5"></i> Rate Down / Price Cut:
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-200 font-semibold">
+                                                        {car.bestTimeToBuy}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => setSelectedCar(car)}
+                                                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs transition-all border border-slate-700">
+                                                    Full Details
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setActiveMainTab('ai-assistant');
+                                                        handleAskAI(`When will the price drop for ${car.name} and what are its full details?`);
+                                                    }}
+                                                    className="bg-brand-600/20 hover:bg-brand-600 text-brand-300 hover:text-white p-2.5 rounded-xl transition-all border border-brand-500/30">
+                                                    <i data-lucide="bot" className="w-4 h-4"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* TAB 2: RATE DOWN TRACKER & RESALE CALCULATOR */}
+                        {activeMainTab === 'price-drop' && (
+                            <div className="space-y-6">
+                                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
+                                    <h3 className="text-lg font-bold text-amber-400 mb-1 flex items-center gap-2">
+                                        <i data-lucide="calculator" className="w-5 h-5"></i>
+                                        2nd Owner Car / Resale Rate Estimator
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mb-4">
+                                        Select the model year and kilometers driven to estimate the best buying or selling period:
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Model Year:</label>
+                                            <select 
+                                                value={calcCarYear} 
+                                                onChange={(e) => setCalcCarYear(e.target.value)}
+                                                className="w-full bg-slate-950 text-xs text-white p-3 rounded-xl border border-slate-800">
+                                                <option value="2025">2025 Model</option>
+                                                <option value="2024">2024 Model</option>
+                                                <option value="2023">2023 Model</option>
+                                                <option value="2022">2022 Model</option>
+                                                <option value="2021">2021 Model</option>
+                                                <option value="2020">2020 Model</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Kilometers Driven:</label>
+                                            <select 
+                                                value={calcKm} 
+                                                onChange={(e) => setCalcKm(e.target.value)}
+                                                className="w-full bg-slate-950 text-xs text-white p-3 rounded-xl border border-slate-800">
+                                                <option value="15000">15,000 KM</option>
+                                                <option value="30000">30,000 KM</option>
+                                                <option value="50000">50,000 KM</option>
+                                                <option value="80000">80,000+ KM</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex items-end">
+                                            <button 
+                                                onClick={calculateResalePrice}
+                                                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl text-xs transition-all shadow-md">
+                                                📊 Calculate Value Now
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {calculatedResale && (
+                                        <div className="bg-slate-950 border border-amber-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div>
+                                                <span className="text-xs text-slate-400">Estimated Resale Value:</span>
+                                                <div className="text-2xl font-black text-amber-400">₹{calculatedResale.val} Lakhs</div>
+                                            </div>
+                                            <div className="text-right sm:text-right">
+                                                <span className="text-xs text-emerald-400 font-bold block">Best Purchase Window:</span>
+                                                <span className="text-xs text-white">{calculatedResale.bestMonth}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                        <i data-lucide="trending-down" className="w-6 h-6 text-emerald-400"></i>
+                                        Rate Down & Price Drop Timeline
+                                    </h3>
+
+                                    <div className="space-y-6 mt-4">
+                                        {filteredCars.map(car => (
+                                            <div key={car.id} className="bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-4 border-b border-slate-800 gap-3">
+                                                    <div className="flex items-center gap-4">
+                                                        <img src={car.image} className="w-16 h-12 object-cover rounded-xl" alt="" />
+                                                        <div>
+                                                            <h4 className="text-lg font-bold text-white">{car.name}</h4>
+                                                            <p className="text-xs text-slate-400">Price: <span className="text-amber-400 font-semibold">{car.expectedPrice}</span></p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs text-emerald-400 font-semibold">
+                                                        Best Buying Window: {car.bestTimeToBuy}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                    {car.priceDropForecast.map((step, idx) => (
+                                                        <div key={idx} className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                                                            <div className="text-xs text-brand-400 font-bold mb-1">{step.period}</div>
+                                                            <div className="text-sm font-semibold text-white mb-1">{step.expectedDiscount}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: CAR HEALTH DIAGNOSTIC SCANNER */}
+                        {activeMainTab === 'scanner' && (
+                            <div className="space-y-6">
+                                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                                                <i data-lucide="wrench" className="w-6 h-6 text-cyan-400"></i>
+                                                Auto Diagnostics Scanner
+                                            </h3>
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                Tap a common issue or type your car's symptoms to get instant DIY solutions and estimated repair costs (₹)!
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Preset Issue Quick Tap Buttons */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                                        {COMMON_CAR_ISSUES.map(issue => (
+                                            <button 
+                                                key={issue.id}
+                                                onClick={() => handleDiagnoseIssue(issue)}
+                                                className="p-4 bg-slate-950 hover:bg-slate-850 rounded-2xl border border-slate-800 hover:border-cyan-500/50 text-left transition-all group">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-cyan-400 px-2 py-0.5 rounded bg-cyan-500/10">
+                                                        {issue.category}
+                                                    </span>
+                                                    <span className="text-[10px] text-rose-400 font-bold">{issue.severity}</span>
+                                                </div>
+                                                <h4 className="font-bold text-sm text-white group-hover:text-cyan-300">{issue.title}</h4>
+                                                <p className="text-xs text-slate-400 mt-1 line-clamp-2">{issue.symptom}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Custom Diagnostic Query */}
+                                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Describe your car problem (e.g., hard clutch, steering vibration, engine knocking)..."
+                                            value={customIssueText}
+                                            onChange={(e) => setCustomIssueText(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleDiagnoseIssue()}
+                                            className="flex-1 bg-slate-900 border border-slate-800 text-xs text-white px-4 py-3 rounded-xl focus:outline-none focus:border-cyan-500"
+                                        />
+                                        <button 
+                                            onClick={() => handleDiagnoseIssue()}
+                                            disabled={isDiagnosing}
+                                            className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-6 py-3 rounded-xl text-xs flex items-center justify-center gap-2">
+                                            {isDiagnosing ? 'Scanning...' : '🔍 Scan Problem Now'}
+                                        </button>
+                                    </div>
+
+                                    {/* Diagnostic Results Box */}
+                                    {diagnosticResult && (
+                                        <div className="mt-6 bg-slate-950 border border-cyan-500/40 p-6 rounded-2xl shadow-xl">
+                                            <h4 className="text-sm font-black text-cyan-400 mb-3 flex items-center gap-2">
+                                                <i data-lucide="check-circle" className="w-5 h-5 text-cyan-400"></i>
+                                                Diagnostic Result & Fix Steps:
+                                            </h4>
+                                            <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line font-mono bg-slate-900 p-4 rounded-xl border border-slate-800">
+                                                {diagnosticResult}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 4: AUTOBOT AI ASSISTANT */}
+                        {activeMainTab === 'ai-assistant' && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden flex flex-col h-[600px] shadow-2xl">
+                                <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                                        <i data-lucide="bot" className="w-5 h-5 text-amber-400"></i>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-sm">AutoBot AI Consultant</h3>
+                                        <p className="text-xs text-emerald-400 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online Live
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
+                                    {aiChatHistory.map((msg, index) => (
+                                        <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs sm:text-sm ${
+                                                msg.sender === 'user' 
+                                                    ? 'bg-brand-600 text-white rounded-br-none' 
+                                                    : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-bl-none whitespace-pre-line'
+                                            }`}>
+                                                {msg.text}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {aiLoading && (
+                                        <div className="text-xs text-slate-400">AutoBot is preparing your answer...</div>
+                                    )}
+                                </div>
+
+                                <div className="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={aiQuestion}
+                                        onChange={(e) => setAiQuestion(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
+                                        placeholder="Type your question in English..."
+                                        className="flex-1 bg-slate-900 border border-slate-800 text-xs text-slate-200 px-4 py-2.5 rounded-xl focus:outline-none focus:border-amber-500"
+                                    />
+                                    <button 
+                                        onClick={() => handleAskAI()}
+                                        className="bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl text-xs">
+                                        Send
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* WhatsApp Price Alert Modal */}
+                    {showWhatsappModal && (
+                        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl max-w-md w-full p-6 text-center relative shadow-2xl">
+                                <button 
+                                    onClick={() => setShowWhatsappModal(false)}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                                    <i data-lucide="x" className="w-5 h-5"></i>
+                                </button>
+
+                                <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-emerald-500/30">
+                                    <i data-lucide="message-circle" className="w-8 h-8"></i>
+                                </div>
+
+                                <h3 className="text-lg font-black text-white mb-1">Get WhatsApp Rate Drop Alerts</h3>
+                                <p className="text-xs text-slate-300 mb-4">
+                                    Enter your mobile number to get instant WhatsApp notifications when prices drop for your favorite cars or 2nd owner Jeeps:
+                                </p>
+
+                                <input 
+                                    type="tel"
+                                    placeholder="Enter 10-digit Mobile Number"
+                                    value={userPhone}
+                                    onChange={(e) => setUserPhone(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-sm text-center text-white px-4 py-3 rounded-xl mb-4 focus:outline-none focus:border-emerald-500"
+                                />
+
+                                <button 
+                                    onClick={() => {
+                                        if (userPhone.length < 10) {
+                                            alert("Please enter a valid 10-digit mobile number.");
+                                            return;
+                                        }
+                                        alert("✅ Thank you! Your price alert is registered. You will receive a WhatsApp message when prices drop!");
+                                        setShowWhatsappModal(false);
+                                        setUserPhone('');
+                                    }}
+                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20">
+                                    Activate Free WhatsApp Alert
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Vehicle Details Modal */}
+                    {selectedCar && (
+                        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 relative shadow-2xl">
+                                <button 
+                                    onClick={() => setSelectedCar(null)}
+                                    className="absolute top-4 right-4 bg-slate-800 text-slate-400 hover:text-white p-2 rounded-full">
+                                    <i data-lucide="x" className="w-5 h-5"></i>
+                                </button>
+
+                                <h2 className="text-2xl font-black text-white mb-1">{selectedCar.name}</h2>
+                                <p className="text-2xl font-extrabold text-amber-400 mb-4">{selectedCar.expectedPrice}</p>
+
+                                <img src={selectedCar.image} className="w-full h-56 object-cover rounded-2xl mb-6 border border-slate-800" alt="" />
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6 text-xs">
+                                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                        <span className="text-slate-500 block">Engine / Power</span>
+                                        <span className="font-bold text-white">{selectedCar.engineBattery}</span>
+                                    </div>
+                                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                        <span className="text-slate-500 block">Mileage</span>
+                                        <span className="font-bold text-white">{selectedCar.rangeMileage}</span>
+                                    </div>
+                                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                        <span className="text-slate-500 block">Status</span>
+                                        <span className="font-bold text-emerald-400">{selectedCar.bookingStatus}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 mb-6">
+                                    <h4 className="text-xs font-bold text-emerald-400 uppercase mb-1">Rate Down Prediction:</h4>
+                                    <p className="text-sm font-bold text-white">{selectedCar.bestTimeToBuy}</p>
+                                    <p className="text-xs text-slate-300 mt-1">{selectedCar.priceCutReason}</p>
+                                </div>
+
+                                <button 
+                                    onClick={() => {
+                                        toggleWishlist(selectedCar.id);
+                                        setSelectedCar(null);
+                                    }}
+                                    className="w-full py-3 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white">
+                                    {wishlist.includes(selectedCar.id) ? 'Remove Alert' : 'Set Price Drop Alert'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <footer className="bg-slate-950 border-t border-slate-900 py-6 px-4 text-center text-xs text-slate-500">
+                        <p>© 2026 AutoPulse - Super Easy Operating Car & Diagnostic Companion.</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
